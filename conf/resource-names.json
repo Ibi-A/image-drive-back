@@ -1,0 +1,17 @@
+{
+    "s3": {
+        "memesBucket": "bucket.memes.memeages.ibi"
+    },
+    "lambda": {
+        "memesCrudLambda": {
+            "lambdaName": "memeages-memes-crud",
+            "lambdaSourceCode": "memes_crud_lambda"
+        }
+    },
+    "dynamoDb": {
+        "memesInformationTable": "memeages-memes-information"
+    },
+    "apiGw": {
+        "memesApi": "memeages-memes-api"
+    }
+}
