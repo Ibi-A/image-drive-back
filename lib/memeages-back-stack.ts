@@ -31,19 +31,11 @@ export class MemeagesBackStack extends cdk.Stack {
     // create a S3 bucket containing all the memes (image files)
     const bucket = new Bucket(this, Utilities.RESOURCE_NAMES.s3.memesBucket)
 
-    // create a Lambda layer containing boto3
-    const crudLambdaLayer = new LayerVersion(this, Utilities.RESOURCE_NAMES.layer.memesCrudLambda, {
-      code: LambdaSourceCode.fromAsset(Utilities.LAMBDA_LAYERS_FOLDER),
-      compatibleRuntimes: [LambdaRuntime.PYTHON_3_8],
-      description: 'Layer for CRUD memes Lambda containing boto3'
-    })
-
     // create a Lambda function handling basic CRUD operations on the memes in the S3 folder
     const crudLambda = new LambdaFunction(this, Utilities.RESOURCE_NAMES.lambda.memesCrudLambda.lambdaName, {
       runtime: LambdaRuntime.PYTHON_3_8,
       handler: Utilities.getLambdaHandlerByLambdaSourceCodeFilename(Utilities.RESOURCE_NAMES.lambda.memesCrudLambda.lambdaSourceCode),
       code: LambdaSourceCode.fromAsset(Utilities.LAMBDA_SOURCE_CODE_FOLDER),
-      layers: [crudLambdaLayer]
     })
 
     // create a DynamoDB table storing information regarding the uploaded memes in the S3 bucket
