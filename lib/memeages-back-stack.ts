@@ -45,8 +45,26 @@ export class MemeagesBackStack extends cdk.Stack {
     })
 
     // create a REST API backed by the previously created CRUD Lambda function
-    const api = new LambdaRestApi(this, Utilities.RESOURCE_NAMES.apiGw.memesApi, {
-      handler: crudLambda
+    const api = this.initMemesApi(crudLambda)
+  }
+
+
+  /** Returns a configured API with specific routes to access memes */
+  private initMemesApi(crudLambda: LambdaFunction) {
+    let api = new LambdaRestApi(this, Utilities.RESOURCE_NAMES.apiGw.memesApi, {
+      handler: crudLambda,
+      proxy: false
     })
+    
+    const memes = api.root.addResource("memes")
+    memes.addMethod("GET")
+    memes.addMethod("POST")
+
+    const meme = memes.addResource("{meme}")
+    meme.addMethod("GET")
+    meme.addMethod("PUT")
+    meme.addMethod("DELETE")
+
+    return api
   }
 }
