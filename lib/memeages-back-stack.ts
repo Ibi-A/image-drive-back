@@ -48,6 +48,10 @@ export class MemeagesBackStack extends cdk.Stack {
 
     // create a REST API backed by the previously created CRUD Lambda function
     const api = this.initMemesApi(crudLambda)
+
+    // add environment variables to access the S3 bucket and the DynamoDB table
+    crudLambda.addEnvironment('memes_s3_bucket_name', bucket.bucketName)
+    crudLambda.addEnvironment('memes_dynamodb_information_table', informationTable.tableName)
   }
 
 

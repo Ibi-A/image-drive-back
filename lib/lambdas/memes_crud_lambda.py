@@ -1,4 +1,6 @@
 import json
+import boto3
+
 from enum import Enum
 
 
@@ -36,6 +38,10 @@ def process_call(http_method: str, resource: str, event):
 
 
 def get_memes():
+    s3 = boto3.resource('s3')
+
+
+
     return None
 
 
