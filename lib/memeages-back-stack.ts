@@ -39,7 +39,7 @@ export class MemeagesBackStack extends cdk.Stack {
     // create a DynamoDB table storing information regarding the uploaded memes in the S3 bucket
     const informationTable = new Table(this, Utilities.RESOURCE_NAMES.dynamoDb.memesInformationTable, {
       partitionKey: {
-        name: 'uri',
+        name: 'name',
         type: AttributeType.STRING
       }
     })
@@ -60,7 +60,7 @@ export class MemeagesBackStack extends cdk.Stack {
     memes.addMethod("GET")
     memes.addMethod("POST")
 
-    const meme = memes.addResource("{meme}")
+    const meme = memes.addResource("{meme-name}")
     meme.addMethod("GET")
     meme.addMethod("PUT")
     meme.addMethod("DELETE")
