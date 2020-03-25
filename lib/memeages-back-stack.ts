@@ -69,6 +69,7 @@ export class MemeagesBackStack extends cdk.Stack {
     const meme = memes.addResource("{meme-name}")
     meme.addMethod("GET")
     meme.addMethod("PUT")
+    meme.addMethod("PATCH")
     meme.addMethod("DELETE")
 
     return api
