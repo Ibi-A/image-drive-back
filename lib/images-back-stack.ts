@@ -69,15 +69,15 @@ class Utilities {
 
 export class ImagesBackStack extends cdk.Stack {
   constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
-    console.log('Hello 1')
     super(scope, id, props);
-    console.log('Hello 2')
+    console.log('[*] Constructing the main stack...')
 
     // create a S3 bucket containing all the images (image files)
+    console.log('[*] Creating ' + 'imagesBucket' + '...')
     const bucket = new Bucket(this, Utilities.getResourceNameById(ResourceType.S3_BUCKET, 'imagesBucket'))
-    console.log('Hello 3')
     
     // instanciate the configuration layer for the images CRUD Lambda function
+    console.log('[*] Creating ' + 'imagesCrudLayer' + '...')
     const configLayer = new LayerVersion(
       this,
       Utilities.getResourceNameById(ResourceType.LAYER, "imagesCrudLayer"),
@@ -88,6 +88,7 @@ export class ImagesBackStack extends cdk.Stack {
     );
 
     // create a Lambda function handling basic CRUD operations on the images in the S3 folder
+    console.log('[*] Creating ' + 'imagesCrudLambda' + '...')
     const crudLambda = new LambdaFunction(
       this,
       Utilities.getResourceNameById(ResourceType.LAMBDA, "imagesCrudLambda"),
@@ -100,6 +101,7 @@ export class ImagesBackStack extends cdk.Stack {
     );
 
     // create a DynamoDB table storing information regarding the uploaded images in the S3 bucket
+    console.log('[*] Creating ' + 'imagesInformationTable' + '...')
     const informationTable = new Table(
       this,
       Utilities.getResourceNameById(ResourceType.DYNAMODB_TABLE, "imagesInformationTable"),
@@ -112,6 +114,7 @@ export class ImagesBackStack extends cdk.Stack {
     );
 
     // create a REST API backed by the previously created CRUD Lambda function
+    console.log('[*] Creating ' + 'imagesApi' + '...')
     const api = this.initImagesApi(crudLambda);
 
     // add environment variables to access the S3 bucket and the DynamoDB table
@@ -123,6 +126,8 @@ export class ImagesBackStack extends cdk.Stack {
       Utilities.IMAGES_CRUD_LAMBDA_ENV_VAR_NAMES[1],
       informationTable.tableName
     );
+
+    console.log('[*] Success!')
   }
 
   /** Returns a configured API with specific routes to access images */
