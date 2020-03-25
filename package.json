@@ -1,8 +1,8 @@
 {
-  "name": "images-back",
+  "name": "image-drive-back",
   "version": "0.1.0",
   "bin": {
-    "images-back": "bin/images-back.js"
+    "image-drive-back": "bin/image-drive-back.js"
   },
   "scripts": {
     "build": "tsc",

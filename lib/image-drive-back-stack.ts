@@ -67,7 +67,7 @@ class Utilities {
 
 }
 
-export class ImagesBackStack extends cdk.Stack {
+export class ImageDriveBackStack extends cdk.Stack {
   constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
     console.log('[*] Constructing the main stack...')

@@ -1,11 +1,11 @@
 import { expect as expectCDK, matchTemplate, MatchStyle } from '@aws-cdk/assert';
 import * as cdk from '@aws-cdk/core';
-import ImagesBack = require('../lib/images-back-stack');
+import ImageDriveBack = require('../lib/image-drive-back-stack');
 
 test('Empty Stack', () => {
     const app = new cdk.App();
     // WHEN
-    const stack = new ImagesBack.ImagesBackStack(app, 'MyTestStack');
+    const stack = new ImageDriveBack.ImageDriveBackStack(app, 'MyTestStack');
     // THEN
     expectCDK(stack).to(matchTemplate({
       "Resources": {}
