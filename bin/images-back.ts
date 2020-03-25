@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import 'source-map-support/register';
 import * as cdk from '@aws-cdk/core';
-import { MemeagesBackStack } from '../lib/memeages-back-stack';
+import { ImagesBackStack } from '../lib/images-back-stack';
 
 const app = new cdk.App();
-new MemeagesBackStack(app, 'MemeagesBackStack');
+new ImagesBackStack(app, 'ImagesBackStack');

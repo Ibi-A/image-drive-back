@@ -1,8 +1,8 @@
 {
-  "name": "memeages-back",
+  "name": "images-back",
   "version": "0.1.0",
   "bin": {
-    "memeages-back": "bin/memeages-back.js"
+    "images-back": "bin/images-back.js"
   },
   "scripts": {
     "build": "tsc",

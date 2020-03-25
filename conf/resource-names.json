@@ -1,20 +1,32 @@
 {
-    "s3": {
-        "memesBucket": "bucket.memes.memeages.ibi"
-    },
-    "lambda": {
-        "memesCrudLambda": {
-            "lambdaName": "memeages-memes-crud",
-            "lambdaSourceCode": "memes_crud_lambda"
+    "s3": [
+        {
+            "bucketId": "imagesBucket",
+            "bucketName": "bucket.memes.memeages.ibi"
         }
-    },
-    "layer": {
-        "memesCrudLayer": "mememeages-memes-crud-layer"
-    },
-    "dynamoDb": {
-        "memesInformationTable": "memeages-memes-information"
-    },
-    "apiGw": {
-        "memesApi": "memeages-memes-api"
-    }
+    ],
+    "lambda": [
+        {
+            "lambdaId": "imagesCrudLambda",
+            "lambdaName": "memeages-memes-crud"
+        }
+    ],   
+    "layer": [
+        {
+            "layerId": "imagesCrudLayer",
+            "layerName": "mememeages-memes-crud-layer"
+        }
+    ],
+    "dynamoDb": [
+        {
+            "tableId": "imagesInformationTable",
+            "tableName": "memeages-memes-information"
+        }
+    ],
+    "apiGw": [
+        {
+            "apiId": "imagesApi",
+            "apiName": "memeages-memes-api"
+        }
+    ]
 }
