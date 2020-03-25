@@ -1,77 +1,110 @@
-import * as cdk from '@aws-cdk/core';
-import { LambdaRestApi } from '@aws-cdk/aws-apigateway';
-import { Table, AttributeType } from '@aws-cdk/aws-dynamodb';
-import { Function as LambdaFunction, Runtime as LambdaRuntime, Code as LambdaSourceCode, LayerVersion } from '@aws-cdk/aws-lambda';
-import { Bucket } from '@aws-cdk/aws-s3';
-
+import * as cdk from "@aws-cdk/core";
+import { LambdaRestApi } from "@aws-cdk/aws-apigateway";
+import { Table, AttributeType } from "@aws-cdk/aws-dynamodb";
+import {
+  Function as LambdaFunction,
+  Runtime as LambdaRuntime,
+  Code as LambdaSourceCode,
+  LayerVersion
+} from "@aws-cdk/aws-lambda";
+import { Bucket } from "@aws-cdk/aws-s3";
 
 class Utilities {
-
   /** JSON containing the name of every resources in the project */
-  public static RESOURCE_NAMES = require("../conf/resource-names.json")
+  public static RESOURCE_NAMES = require("../conf/resource-names.json");
   /** Path of the folder containing the Lambdas source code files */
-  public static LAMBDA_SOURCE_CODE_FOLDER = __dirname + "\\lambdas\\"
-  /** Path of the folder containing the Lambdas layers files */
-  public static LAMBDA_LAYERS_FOLDER = __dirname + "\\lambdas\\" + "\\layers\\"
+  public static LAMBDA_SOURCE_CODE_FOLDER = __dirname + "/lambdas";
   /** Default Lambda handler function name for every Lambda functions */
-  public static LAMBDA_HANDLER_NAME = "lambda_handler"
-  
-  /** Returns the Lambda handler name (string) for a given Lambda source code filename WITHOUT FILE EXTENSION (string) */
-  public static getLambdaHandlerByLambdaSourceCodeFilename(lambdaSourceCodeFilename: string) {
-    return lambdaSourceCodeFilename + "." + Utilities.LAMBDA_HANDLER_NAME
-  }
+  public static LAMBDA_HANDLER_NAME = "lambda_handler";
+  /** Path of the folder containing the Lambdas layers */
+  public static LAMBDA_LAYERS_FOLDER =
+    Utilities.LAMBDA_SOURCE_CODE_FOLDER + "/layers";
+  /** Path of the configuration layer folder */
+  public static CONFIGURATION_LAYER_FOLDER =
+    Utilities.LAMBDA_LAYERS_FOLDER + "/configuration-layer";
+  /** JSON containing the name of every resources in the project */
+  public static MEMES_CRUD_LAMBDA_ENV_VAR_NAMES = require(Utilities.CONFIGURATION_LAYER_FOLDER +
+    "/lambda-environment-variable-names/memes-crud-lambda.json");
+  /** Resource identifier of the memes CRUD Lambda handler */
+  public static MEMES_CRUD_LAMBDA_HANDLER =
+    Utilities.RESOURCE_NAMES.lambda.memesCrudLambda.lambdaSourceCode +
+    "." +
+    Utilities.LAMBDA_HANDLER_NAME;
 }
 
-
 export class MemeagesBackStack extends cdk.Stack {
-
   constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
     // create a S3 bucket containing all the memes (image files)
-    const bucket = new Bucket(this, Utilities.RESOURCE_NAMES.s3.memesBucket)
+    const bucket = new Bucket(this, Utilities.RESOURCE_NAMES.s3.memesBucket);
+
+    // instanciate the configuration layer for the memes CRUD Lambda function
+    const configLayer = new LayerVersion(
+      this,
+      Utilities.RESOURCE_NAMES.layer.memesCrudLayer,
+      {
+        compatibleRuntimes: [LambdaRuntime.PYTHON_3_8],
+        code: LambdaSourceCode.fromAsset(Utilities.CONFIGURATION_LAYER_FOLDER)
+      }
+    );
 
     // create a Lambda function handling basic CRUD operations on the memes in the S3 folder
-    const crudLambda = new LambdaFunction(this, Utilities.RESOURCE_NAMES.lambda.memesCrudLambda.lambdaName, {
-      runtime: LambdaRuntime.PYTHON_3_8,
-      handler: Utilities.getLambdaHandlerByLambdaSourceCodeFilename(Utilities.RESOURCE_NAMES.lambda.memesCrudLambda.lambdaSourceCode),
-      code: LambdaSourceCode.fromAsset(Utilities.LAMBDA_SOURCE_CODE_FOLDER),
-    })
+    const crudLambda = new LambdaFunction(
+      this,
+      Utilities.RESOURCE_NAMES.lambda.memesCrudLambda.lambdaName,
+      {
+        runtime: LambdaRuntime.PYTHON_3_8,
+        handler: Utilities.MEMES_CRUD_LAMBDA_HANDLER,
+        code: LambdaSourceCode.fromAsset(Utilities.LAMBDA_SOURCE_CODE_FOLDER),
+        layers: [configLayer]
+      }
+    );
 
     // create a DynamoDB table storing information regarding the uploaded memes in the S3 bucket
-    const informationTable = new Table(this, Utilities.RESOURCE_NAMES.dynamoDb.memesInformationTable, {
-      partitionKey: {
-        name: 'name',
-        type: AttributeType.STRING
+    const informationTable = new Table(
+      this,
+      Utilities.RESOURCE_NAMES.dynamoDb.memesInformationTable,
+      {
+        partitionKey: {
+          name: "name",
+          type: AttributeType.STRING
+        }
       }
-    })
+    );
 
     // create a REST API backed by the previously created CRUD Lambda function
-    const api = this.initMemesApi(crudLambda)
+    const api = this.initMemesApi(crudLambda);
 
     // add environment variables to access the S3 bucket and the DynamoDB table
-    crudLambda.addEnvironment('memes_s3_bucket_name', bucket.bucketName)
-    crudLambda.addEnvironment('memes_dynamodb_information_table', informationTable.tableName)
+    crudLambda.addEnvironment(
+      Utilities.MEMES_CRUD_LAMBDA_ENV_VAR_NAMES.memes_s3_bucket_name,
+      bucket.bucketName
+    );
+    crudLambda.addEnvironment(
+      Utilities.MEMES_CRUD_LAMBDA_ENV_VAR_NAMES
+        .memes_dynamodb_information_table,
+      informationTable.tableName
+    );
   }
-
 
   /** Returns a configured API with specific routes to access memes */
   private initMemesApi(crudLambda: LambdaFunction) {
     let api = new LambdaRestApi(this, Utilities.RESOURCE_NAMES.apiGw.memesApi, {
       handler: crudLambda,
       proxy: false
-    })
-    
-    const memes = api.root.addResource("memes")
-    memes.addMethod("GET")
-    memes.addMethod("POST")
+    });
 
-    const meme = memes.addResource("{meme-name}")
-    meme.addMethod("GET")
-    meme.addMethod("PUT")
-    meme.addMethod("PATCH")
-    meme.addMethod("DELETE")
+    const memes = api.root.addResource("memes");
+    memes.addMethod("GET");
+    memes.addMethod("POST");
 
-    return api
+    const meme = memes.addResource("{meme-name}");
+    meme.addMethod("GET");
+    meme.addMethod("PUT");
+    meme.addMethod("PATCH");
+    meme.addMethod("DELETE");
+
+    return api;
   }
 }

@@ -8,6 +8,9 @@
             "lambdaSourceCode": "memes_crud_lambda"
         }
     },
+    "layer": {
+        "memesCrudLayer": "mememeages-memes-crud-layer"
+    },
     "dynamoDb": {
         "memesInformationTable": "memeages-memes-information"
     },

@@ -1,0 +1,4 @@
+[
+        "memes_s3_bucket_name",
+        "memes_dynamodb_information_table"
+]
