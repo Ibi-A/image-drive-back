@@ -11,16 +11,17 @@ import { Bucket } from "@aws-cdk/aws-s3";
 
 
 enum ResourceType {
-  S3_BUCKET,
-  LAMBDA,
-  LAYER,
-  DYNAMODB_TABLE,
-  API
+  S3_BUCKET = "s3",
+  LAMBDA = "lambda",
+  LAYER = "layer",
+  DYNAMODB_TABLE = "dynamoDb",
+  API = "apiGw"
 }
 
 class Utilities {
   /** JSON containing the name of every resources in the project */
   public static RESOURCE_NAMES = require("../conf/resource-names.json");
+  public static PROJECT_CONFIGURATION = require("../conf/project-configuration.json")
   /** Path of the folder containing the Lambdas source code files */
   public static LAMBDA_SOURCE_CODE_FOLDER = __dirname + "/lambdas";
   /** Default Lambda handler function name for every Lambda functions */
@@ -37,31 +38,8 @@ class Utilities {
   public static IMAGES_CRUD_LAMBDA_HANDLER = "images_crud_lambda" + "." + Utilities.LAMBDA_HANDLER_NAME; 
 
   public static getResourceNameById(resourceType: ResourceType, resourceId: string) {
-
-    let resourceName = ""
-
-    switch (+resourceType) {
-      case ResourceType.S3_BUCKET:
-        resourceName = Utilities.RESOURCE_NAMES.s3.find((bucket: any) => bucket.bucketId === resourceId)["bucketName"]
-        break
-
-      case ResourceType.LAMBDA:
-        resourceName = Utilities.RESOURCE_NAMES.lambda.find((lambda: any) => lambda.lambdaId === resourceId)["lambdaName"]
-        break
-
-      case ResourceType.LAYER:
-        resourceName = Utilities.RESOURCE_NAMES.layer.find((layer: any) => layer.layerId === resourceId)["layerName"]
-        break
-
-      case ResourceType.DYNAMODB_TABLE:
-        resourceName = Utilities.RESOURCE_NAMES.dynamoDb.find((table: any) => table.tableId === resourceId)["tableName"]
-        break
-
-      case ResourceType.API:
-        resourceName = Utilities.RESOURCE_NAMES.apiGw.find((api: any) => api.apiId === resourceId)["apiName"]
-        break
-    }
-
+    let resourceName = Utilities.RESOURCE_NAMES[resourceType].find((resource: any) => resource.id === resourceId)["name"]
+    
     return resourceName
   }
 
