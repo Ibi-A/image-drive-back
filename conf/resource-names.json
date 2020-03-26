@@ -1,5 +1,5 @@
 {
-    "s3": [
+    "bucket": [
         {
             "id": "imagesBucket",
             "name": "bucket.memes.memeages.ibi"
@@ -17,13 +17,13 @@
             "name": "mememeages-memes-crud-layer"
         }
     ],
-    "dynamoDb": [
+    "table": [
         {
             "id": "imagesInformationTable",
             "name": "memeages-memes-information"
         }
     ],
-    "apiGw": [
+    "api": [
         {
             "id": "imagesApi",
             "name": "memeages-memes-api"

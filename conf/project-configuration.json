@@ -1,4 +1,11 @@
 {
-    "projectId": "",
-    "projectName": "image-drive"
+    "global": {
+        "projectId": "",
+        "projectName": "image-drive"
+    },
+    "urls": {
+        "lambdasSourceCodeFolderPath": "",
+        "lambdaHandlersName": "",
+        "lambdaLayerFolderPath": ""
+    }
 }

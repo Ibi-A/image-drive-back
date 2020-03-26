@@ -11,11 +11,11 @@ import { Bucket } from "@aws-cdk/aws-s3";
 
 
 enum ResourceType {
-  S3_BUCKET = "s3",
+  S3_BUCKET = "bucket",
   LAMBDA = "lambda",
   LAYER = "layer",
-  DYNAMODB_TABLE = "dynamoDb",
-  API = "apiGw"
+  DYNAMODB_TABLE = "table",
+  API = "api"
 }
 
 class Utilities {
@@ -29,11 +29,11 @@ class Utilities {
   /** Path of the folder containing the Lambdas layers */
   public static LAMBDA_LAYERS_FOLDER = Utilities.LAMBDA_SOURCE_CODE_FOLDER + "/layers";
   /** Path of the configuration layer folder */
-  public static CONFIGURATION_LAYER_FOLDER = Utilities.LAMBDA_LAYERS_FOLDER + "/configuration-layer";
+  public static CONFIGURATION_LAYER_FOLDER = Utilities.LAMBDA_LAYERS_FOLDER + "/global-layer";
 
   /** JSON containing the name of every AWS resources in the project */
-  public static IMAGES_CRUD_LAMBDA_ENV_VAR_NAMES = require(Utilities.CONFIGURATION_LAYER_FOLDER +
-    "/lambda-environment-variable-names/images-crud-lambda.json");
+  public static LAMBDA_ENV_VAR_NAMES = require(Utilities.CONFIGURATION_LAYER_FOLDER +
+    "/lambda-environment-variables.json");
   /** Resource identifier of the images CRUD Lambda handler */
   public static IMAGES_CRUD_LAMBDA_HANDLER = "images_crud_lambda" + "." + Utilities.LAMBDA_HANDLER_NAME; 
 
@@ -97,11 +97,11 @@ export class ImageDriveBackStack extends cdk.Stack {
 
     // add environment variables to access the S3 bucket and the DynamoDB table
     crudLambda.addEnvironment(
-      Utilities.IMAGES_CRUD_LAMBDA_ENV_VAR_NAMES[0],
+      Utilities.LAMBDA_ENV_VAR_NAMES["images-crud-lambda"][0],
       bucket.bucketName
     );
     crudLambda.addEnvironment(
-      Utilities.IMAGES_CRUD_LAMBDA_ENV_VAR_NAMES[1],
+      Utilities.LAMBDA_ENV_VAR_NAMES["images-crud-lambda"][1],
       informationTable.tableName
     );
 
