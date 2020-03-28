@@ -29,7 +29,7 @@ class Utilities {
   /** Path of the folder containing the Lambdas layers */
   public static LAMBDA_LAYERS_FOLDER = Utilities.LAMBDA_SOURCE_CODE_FOLDER + "/layers";
   /** Path of the configuration layer folder */
-  public static CONFIGURATION_LAYER_FOLDER = Utilities.LAMBDA_LAYERS_FOLDER + "/global-layer";
+  public static CONFIGURATION_LAYER_FOLDER = Utilities.LAMBDA_LAYERS_FOLDER + "/global_layer";
 
   /** JSON containing the name of every AWS resources in the project */
   public static LAMBDA_ENV_VAR_NAMES = require(Utilities.CONFIGURATION_LAYER_FOLDER +
@@ -85,7 +85,7 @@ export class ImageDriveBackStack extends cdk.Stack {
       Utilities.getResourceNameById(ResourceType.DYNAMODB_TABLE, "imagesInformationTable"),
       {
         partitionKey: {
-          name: "name",
+          name: "id",
           type: AttributeType.STRING
         }
       }
@@ -105,6 +105,9 @@ export class ImageDriveBackStack extends cdk.Stack {
       informationTable.tableName
     );
 
+    bucket.grantPut(crudLambda)
+    informationTable.grantReadWriteData(crudLambda)
+
     console.log('[*] Success!')
   }
 
@@ -119,7 +122,7 @@ export class ImageDriveBackStack extends cdk.Stack {
     images.addMethod("GET");
     images.addMethod("POST");
 
-    const image = images.addResource("{images-name}");
+    const image = images.addResource("{image-id}");
     image.addMethod("GET");
     image.addMethod("PUT");
     image.addMethod("PATCH");

@@ -9,10 +9,11 @@ def extract_payload(event):
         "path": event['path'],
         "query_string_parameters": event['queryStringParameters'],
         "multi_value_query_string_parameters": event['multiValueQueryStringParameters'],
-        "path_parameters": event['parathParameters'],
+        "path_parameters": event['pathParameters'],
         "body": event['body'],
         "is_base64_encoded": event['isBase64Encoded'],
-        "request_time": event['requestContext']['requestTime']
+        "request_time": event['requestContext']['requestTime'],
+        "headers": event['headers']
     }
 
     return payload
@@ -27,7 +28,7 @@ def generate_lambda_response(status_code: int, payload: dict):
     return response
 
 
-def create_presigned_url(bucket_name, object_name, expiration=3600):
+def create_presigned_url(bucket_name, object_name, expiration=3600, http_method='GET'):
     """Generate a presigned URL to share an S3 object
 
     :param bucket_name: string
@@ -36,10 +37,15 @@ def create_presigned_url(bucket_name, object_name, expiration=3600):
     :return: Presigned URL as string. If error, returns None.
     """
 
+    methods = {
+        'GET': 'get_object',
+        'POST': 'put_object'
+    }
+
     # Generate a presigned URL for the S3 object
     s3_client = boto3.client('s3')
     try:
-        response = s3_client.generate_presigned_url('get_object',
+        response = s3_client.generate_presigned_url(methods[http_method],
                                                     Params={'Bucket': bucket_name,
                                                             'Key': object_name},
                                                     ExpiresIn=expiration)
