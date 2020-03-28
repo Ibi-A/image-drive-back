@@ -33,6 +33,7 @@ class Image:
 
         return generated_id
 
+
     def __init__(self, s3_bucket, dynamodb_table, image_id=None, image_name=None, image_format=None, encoded_b64_image=None):
         self.s3_bucket = s3_bucket
         self.dynamodb_table = dynamodb_table
@@ -88,6 +89,9 @@ class Image:
             }
         )
 
+        redirect_url = create_presigned_url(
+            self.s3_bucket.name, self.image_s3_key)
+
         response = {
             "statusCode": 201,
             "headers": {
@@ -96,7 +100,8 @@ class Image:
             "body": json.dumps({
                 "id": self.image_id,
                 "name": self.image_name,
-                "format": self.image_format
+                "format": self.image_format,
+                "uri": redirect_url
             })
         }
 
