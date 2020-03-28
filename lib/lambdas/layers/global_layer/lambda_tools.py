@@ -1,5 +1,20 @@
 import json
 import boto3
+import string
+import random
+
+
+def get_random_id(size: int):
+    random.seed()
+    charset = string.digits + string.ascii_letters + '_'
+
+    generated_id = ""
+
+    for _ in range(0, size):
+        generated_id = generated_id + \
+            charset[random.randint(0, len(charset) - 1)]
+
+    return generated_id
 
 
 def extract_payload(event):
@@ -19,9 +34,12 @@ def extract_payload(event):
     return payload
 
 
-def generate_lambda_response(status_code: int, payload: dict):
+def get_generic_lambda_response(status_code: int, payload: dict):
     response = {
         "statusCode": status_code,
+        "headers": {
+            'Content-Type': 'application/json'
+        },
         "body": json.dumps(payload)
     }
 

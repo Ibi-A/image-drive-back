@@ -1,13 +1,12 @@
 import json
 import boto3
 import os
-import string
-import random
+
 
 from enum import Enum
 from base64 import b64encode, b64decode
 
-from layers.global_layer.lambda_tools import extract_payload, create_presigned_url
+from layers.global_layer.lambda_tools import extract_payload, create_presigned_url, get_generic_lambda_response, get_random_id
 
 
 class Image:
@@ -22,17 +21,12 @@ class Image:
 
     encoded_b64_image = None
 
-    def get_random_id(self, size: int):
-        random.seed()
-        charset = string.digits + string.ascii_letters + '_'
-
-        generated_id = ""
-
-        for _ in range(0, size):
-            generated_id = generated_id + charset[random.randint(0, len(charset) - 1)]
-
-        return generated_id
-
+    @staticmethod
+    def get_image_extension_by_content_type(content_type: str):
+        if content_type == 'image/jpeg':
+            return 'JPG'
+        elif content_type == 'image/png':
+            return 'PNG'
 
     def __init__(self, s3_bucket, dynamodb_table, image_id=None, image_name=None, image_format=None, encoded_b64_image=None):
         self.s3_bucket = s3_bucket
@@ -51,7 +45,7 @@ class Image:
             self.image_s3_key = image_info['s3_key']
 
         elif (image_name and image_format and encoded_b64_image) is not None:
-            self.image_id = self.get_random_id(8)
+            self.image_id = get_random_id(16)
             self.image_name = image_name
             self.image_format = image_format.upper()
             self.image_s3_key = f'{self.image_id}.{self.image_format.lower()}'
@@ -61,18 +55,11 @@ class Image:
         redirect_url = create_presigned_url(
             self.s3_bucket.name, self.image_s3_key)
 
-        return {
-            "statusCode": 200,
-            "headers": {
-                "Content-Type": 'application/json'
-            },
-            "body": json.dumps({
-                "id": self.image_id,
-                "imageName": self.image_name,
-                "imageFormat": self.image_format,
-                "uri": redirect_url
-            })
-        }
+        payload = self.get_image_payload(redirect_url)
+
+        response = get_generic_lambda_response(200, payload)
+
+        return response
 
     def save_image(self):
         decoded_b64_image = b64decode(self.encoded_b64_image)
@@ -92,20 +79,46 @@ class Image:
         redirect_url = create_presigned_url(
             self.s3_bucket.name, self.image_s3_key)
 
-        response = {
-            "statusCode": 201,
-            "headers": {
-                "Content-Type": 'application/json'
-            },
-            "body": json.dumps({
-                "id": self.image_id,
-                "name": self.image_name,
-                "format": self.image_format,
-                "uri": redirect_url
-            })
-        }
+        payload = self.get_image_payload(redirect_url)
+
+        response = get_generic_lambda_response(200, payload)
 
         return response
+
+    def delete_image(self):
+
+        print(self.image_s3_key)
+
+        print(self.s3_bucket.delete_objects(
+            Delete={
+                'Objects': [
+                    {
+                        'Key': f"{self.image_s3_key}"
+                    }
+                ]
+            })
+        )
+        
+
+        self.dynamodb_table.delete_item(
+            Key={
+                'id': self.image_id
+            }
+        )
+
+        payload = None
+
+        response = get_generic_lambda_response(204, payload)
+
+        return response
+
+    def get_image_payload(self, s3_presigned_url):
+        return {
+            "id": self.image_id,
+            "name": self.image_name,
+            "format": self.image_format,
+            "uri": s3_presigned_url
+        }
 
 
 def lambda_handler(event, _):
@@ -134,13 +147,6 @@ def process_call(payload: dict):
     return result
 
 
-def get_image_extension_by_content_type(content_type: str):
-    if content_type == 'image/jpeg':
-        return 'JPG'
-    elif content_type == 'image/png':
-        return 'PNG'
-
-
 def get_images(payload: dict):
     return "None"
 
@@ -148,7 +154,7 @@ def get_images(payload: dict):
 def post_image(payload: dict):
     image = {
         "name": payload['headers']['Image-Name'],
-        "format": get_image_extension_by_content_type(payload['headers']['Content-Type']),
+        "format": Image.get_image_extension_by_content_type(payload['headers']['Content-Type']),
         "b64_encoded_image": payload['body']
     }
 
@@ -170,10 +176,8 @@ def get_image(payload: dict):
     dynamodb = boto3.resource('dynamodb')
     table = dynamodb.Table(os.environ['images_dynamodb_information_table'])
 
-    
-    print(payload['path_parameters'])
-
-    image = Image(bucket, table, image_id=payload['path_parameters']['image-id'])
+    image = Image(
+        bucket, table, image_id=payload['path_parameters']['image-id'])
 
     return image.get_image_http_payload()
 
@@ -187,4 +191,12 @@ def patch_image(payload: dict):
 
 
 def delete_image(payload: dict):
-    return "None"
+    s3 = boto3.resource('s3')
+    bucket = s3.Bucket(os.environ['images_s3_bucket_name'])
+    dynamodb = boto3.resource('dynamodb')
+    table = dynamodb.Table(os.environ['images_dynamodb_information_table'])
+
+    image = Image(
+        bucket, table, image_id=payload['path_parameters']['image-id'])
+
+    return image.delete_image()

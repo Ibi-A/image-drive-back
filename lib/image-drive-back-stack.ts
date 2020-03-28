@@ -105,7 +105,7 @@ export class ImageDriveBackStack extends cdk.Stack {
       informationTable.tableName
     );
 
-    bucket.grantPut(crudLambda)
+    bucket.grantReadWrite(crudLambda)
     informationTable.grantReadWriteData(crudLambda)
 
     console.log('[*] Success!')
