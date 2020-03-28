@@ -6,20 +6,14 @@ import os
 from enum import Enum
 from base64 import b64encode, b64decode
 
-from layers.global_layer.lambda_tools import extract_payload, create_presigned_url, get_generic_lambda_response, get_random_id
+from layers.global_layer.lambda_tools import extract_payload, create_presigned_url, get_generic_lambda_response, get_random_id, get_dynamodb_table_item
 
 
 class Image:
 
-    s3_bucket = None
-    dynamodb_table = None
 
-    image_id: str = None
-    image_name: str = None
-    image_format: str = None
-    image_s3_key: str = None
+    IMAGE_ID_LENGTH = 16
 
-    encoded_b64_image = None
 
     @staticmethod
     def get_image_extension_by_content_type(content_type: str):
@@ -28,24 +22,21 @@ class Image:
         elif content_type == 'image/png':
             return 'PNG'
 
+
     def __init__(self, s3_bucket, dynamodb_table, image_id=None, image_name=None, image_format=None, encoded_b64_image=None):
         self.s3_bucket = s3_bucket
         self.dynamodb_table = dynamodb_table
 
         if image_id is not None:
             self.image_id = image_id
-            image_info = self.dynamodb_table.get_item(
-                Key={
-                    'id': image_id
-                }
-            )['Item']
+            image_info = get_dynamodb_table_item(self.dynamodb_table, 'id', self.image_id)
 
             self.image_name = image_info['name']
             self.image_format = image_info['format']
             self.image_s3_key = image_info['s3_key']
 
         elif (image_name and image_format and encoded_b64_image) is not None:
-            self.image_id = get_random_id(16)
+            self.image_id = get_random_id(Image.IMAGE_ID_LENGTH)
             self.image_name = image_name
             self.image_format = image_format.upper()
             self.image_s3_key = f'{self.image_id}.{self.image_format.lower()}'
@@ -99,7 +90,6 @@ class Image:
             })
         )
         
-
         self.dynamodb_table.delete_item(
             Key={
                 'id': self.image_id

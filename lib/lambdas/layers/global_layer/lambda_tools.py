@@ -4,6 +4,14 @@ import string
 import random
 
 
+def get_dynamodb_table_item(dynamodb_table, key_name, key_value):
+    return dynamodb_table.get_item(
+        Key={
+            key_name: key_value
+        }
+    )['Item']
+
+
 def get_random_id(size: int):
     random.seed()
     charset = string.digits + string.ascii_letters + '_'
