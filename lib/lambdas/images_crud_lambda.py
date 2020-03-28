@@ -10,7 +10,6 @@ from base64 import b64encode, b64decode
 
 
 class Image:
-
     IMAGE_ID_LENGTH = 16
 
     @staticmethod
@@ -27,6 +26,7 @@ class Image:
 
         if image_id is not None:
             self.image_id = image_id
+
             image_info = LambdaTools.get_dynamodb_table_item(self.dynamodb_table, 'id', self.image_id)
 
             self.image_name = image_info['name']
