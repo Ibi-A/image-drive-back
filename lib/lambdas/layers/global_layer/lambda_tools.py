@@ -4,6 +4,14 @@ import string
 import random
 
 
+def get_dynamodb_table_item(dynamodb_table, key_name, key_value):
+    return dynamodb_table.get_item(
+        Key={
+            key_name: key_value
+        }
+    )['Item']
+
+
 def get_random_id(size: int):
     random.seed()
     charset = string.digits + string.ascii_letters + '_'
@@ -46,7 +54,7 @@ def get_generic_lambda_response(status_code: int, payload: dict):
     return response
 
 
-def create_presigned_url(bucket_name, object_name, expiration=3600, http_method='GET'):
+def create_presigned_url(bucket_name, object_name, expiration=3600):
     """Generate a presigned URL to share an S3 object
 
     :param bucket_name: string
@@ -55,15 +63,10 @@ def create_presigned_url(bucket_name, object_name, expiration=3600, http_method=
     :return: Presigned URL as string. If error, returns None.
     """
 
-    methods = {
-        'GET': 'get_object',
-        'POST': 'put_object'
-    }
-
     # Generate a presigned URL for the S3 object
     s3_client = boto3.client('s3')
     try:
-        response = s3_client.generate_presigned_url(methods[http_method],
+        response = s3_client.generate_presigned_url('get_object',
                                                     Params={'Bucket': bucket_name,
                                                             'Key': object_name},
                                                     ExpiresIn=expiration)
