@@ -79,22 +79,9 @@ class Image:
         return payload
 
     def delete_image(self):
-        self.s3_bucket.delete_objects(
-            Delete={
-                'Objects': [
-                    {
-                        'Key': f"{self.image_s3_key}"
-                    }
-                ]
-            }
-        )
+        LambdaTools.AWSResourceHelper.s3_delete_object(self.s3_bucket, self.image_s3_key)
+        LambdaTools.AWSResourceHelper.dynamodb_delete_item(self.dynamodb_table, 'id', self.image_id)
 
-        self.dynamodb_table.delete_item(
-            Key={
-                'id': self.image_id
-            }
-        )
-     
         return None
 
     def output_payload(self, s3_presigned_url):

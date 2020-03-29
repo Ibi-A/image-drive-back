@@ -102,6 +102,27 @@ class AWSResourceHelper:
         return response
 
 
+    @staticmethod
+    def s3_delete_object(bucket, object_name):
+        return bucket.delete_objects(
+            Delete={
+                'Objects': [
+                    {
+                        'Key': object_name
+                    }
+                ]
+            }
+        )
+
+    @staticmethod
+    def dynamodb_delete_item(table, key_name, key_value):
+        return table.delete_item(
+            Key={
+                key_name: key_value
+            }
+        )
+
+
 class GenericTools:
     @staticmethod
     def get_random_id(size: int):
