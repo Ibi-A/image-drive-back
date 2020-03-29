@@ -85,10 +85,10 @@ class Image:
 
     def as_dict(self, s3_presigned_url: str) -> dict:
         return {
-            "id": self.image_id,
-            "name": self.image_name,
-            "format": self.image_format,
-            "uri": s3_presigned_url
+            'id': self.image_id,
+            'name': self.image_name,
+            'format': self.image_format,
+            'uri': s3_presigned_url
         }
 
 
@@ -105,9 +105,9 @@ class CRUDImage(LambdaTools.CRUDInterface):
             Function reponsible for POST /images
         """
         image_payload = {
-            "name": payload['headers']['Image-Name'],
-            "format": Image.get_image_extension_by_content_type(payload['headers']['Content-Type']),
-            "b64_encoded_image": payload['body']
+            'name': payload['headers']['Image-Name'],
+            'format': Image.get_image_extension_by_content_type(payload['headers']['Content-Type']),
+            'b64_encoded_image': payload['body']
         }
 
         image = Image(

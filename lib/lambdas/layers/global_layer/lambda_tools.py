@@ -11,11 +11,11 @@ from abc import ABC, abstractmethod
 
 @final
 class HTTPMethod(Enum):
-    GET = "GET"
-    POST = "POST"
-    PUT = "PUT"
-    PATCH = "PATCH"
-    DELETE = "DELETE"
+    GET = 'GET'
+    POST = 'POST'
+    PUT = 'PUT'
+    PATCH = 'PATCH'
+    DELETE = 'DELETE'
 
 
 class AWSResourceHelper:
@@ -38,12 +38,13 @@ class AWSResourceHelper:
 
     @staticmethod
     def s3_create_presigned_url(bucket_name: str, object_name: str, expiration: int=3600) -> str:
-        """Generate a presigned URL to share an S3 object
+        """
+            Generate a presigned URL to share an S3 object
 
-        :param bucket_name: string
-        :param object_name: string
-        :param expiration: Time in seconds for the presigned URL to remain valid
-        :return: Presigned URL as string. If error, returns None.
+            :param bucket_name: string
+            :param object_name: string
+            :param expiration: Time in seconds for the presigned URL to remain valid
+            :return: Presigned URL as string. If error, returns None.
         """
 
         # Generate a presigned URL for the S3 object
@@ -79,7 +80,7 @@ class GenericTools:
         random.seed()
         charset = string.digits + string.ascii_letters + '_'
 
-        generated_id = ""
+        generated_id = ''
 
         for _ in range(0, size):
             generated_id = generated_id + \
@@ -138,20 +139,20 @@ class CRUDLambdaManager:
     @classmethod
     def __extract_payload(cls, lambda_event) -> dict:
         payload = {
-            "context": {
-                "http_method": HTTPMethod(lambda_event['requestContext']['httpMethod']),
-                "resource": lambda_event['resource'],
-                "path": lambda_event['path'],
-                "is_base64_encoded": lambda_event['isBase64Encoded'],
-                "request_time": lambda_event['requestContext']['requestTime'],
+            'context': {
+                'http_method': HTTPMethod(lambda_event['requestContext']['httpMethod']),
+                'resource': lambda_event['resource'],
+                'path': lambda_event['path'],
+                'is_base64_encoded': lambda_event['isBase64Encoded'],
+                'request_time': lambda_event['requestContext']['requestTime'],
             },
-            "headers": lambda_event['headers'],
-            "params": {
-                "query_string_params": lambda_event['queryStringParameters'],
-                "multi_value_query_string_params": lambda_event['multiValueQueryStringParameters'],
-                "path_params": lambda_event['pathParameters'],
+            'headers': lambda_event['headers'],
+            'params': {
+                'query_string_params': lambda_event['queryStringParameters'],
+                'multi_value_query_string_params': lambda_event['multiValueQueryStringParameters'],
+                'path_params': lambda_event['pathParameters'],
             },
-            "body": lambda_event['body']  
+            'body': lambda_event['body']  
         }
 
         return payload
@@ -160,11 +161,11 @@ class CRUDLambdaManager:
     @staticmethod
     def lambda_http_response(status_code: HTTPStatus, body: dict) -> dict:
         response = {
-            "statusCode": status_code.value,
-            "headers": {
+            'statusCode': status_code.value,
+            'headers': {
                 'Content-Type': 'application/json'
             },
-            "body": json.dumps(body)
+            'body': json.dumps(body)
         }
 
         return response
@@ -181,6 +182,6 @@ class CRUDLambdaManager:
             Extracts the called HTTP method and resource, invokes the proper
             function and returns the HTTP response.
         """
-        response = self.crud_functions[self.payload['context']["resource"]][self.payload['context']["http_method"]](self.payload)
+        response = self.crud_functions[self.payload['context']['resource']][self.payload['context']['http_method']](self.payload)
 
         return response
