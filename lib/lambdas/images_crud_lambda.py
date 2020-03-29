@@ -34,7 +34,8 @@ class Image:
         if image_id is not None:
             self.image_id = image_id
 
-            image_info = LambdaTools.get_dynamodb_table_item(self.dynamodb_table, 'id', self.image_id)
+            image_info = LambdaTools.get_dynamodb_table_item(
+                self.dynamodb_table, 'id', self.image_id)
 
             self.image_name = image_info['name']
             self.image_format = image_info['format']
@@ -89,7 +90,7 @@ class Image:
                 ]
             }
         )
-        
+
         self.dynamodb_table.delete_item(
             Key={
                 'id': self.image_id
@@ -116,33 +117,23 @@ def lambda_handler(event, _):
         Extracts the payload received from the API call and processes it
         accordingly.
     """
-    payload = LambdaTools.extract_payload(event)
-    response = process_call(payload)
+    crud_lambda_manager = LambdaTools.CrudLambdaManager(
+        'images_crud_lambda', event,
+        {
+            "/images": {
+                "GET": get_images,
+                "POST": post_image
+            },
+            "/images/{image-id}": {
+                "GET": get_image,
+                "PUT": put_image,
+                "PATCH": patch_image,
+                "DELETE": delete_image
+            }
+        }  
+    )
 
-    return response
-
-
-def process_call(payload: dict):
-    """
-        Extracts the called HTTP method and resource, invokes the proper
-        function and returns the HTTP response.
-    """
-    calls = {
-        "/images": {
-            "GET": get_images,
-            "POST": post_image
-        },
-        "/images/{image-id}": {
-            "GET": get_image,
-            "PUT": put_image,
-            "PATCH": patch_image,
-            "DELETE": delete_image
-        }
-    }
-
-    response = calls[payload["resource"]][payload["http_method"]](payload)
-
-    return response
+    return crud_lambda_manager.process_call()
 
 
 def get_images(payload: dict):

@@ -3,6 +3,46 @@ import boto3
 import string
 import random
 
+from http import HTTPStatus
+
+
+class CrudLambdaManager:
+    @classmethod
+    def __extract_payload(cls, lambda_event):
+        payload = {
+            # context
+            "http_method": lambda_event['requestContext']['httpMethod'],
+            "resource": lambda_event['resource'],
+            "path": lambda_event['path'],
+            "is_base64_encoded": lambda_event['isBase64Encoded'],
+            "request_time": lambda_event['requestContext']['requestTime'],
+            # params
+            "query_string_parameters": lambda_event['queryStringParameters'],
+            "multi_value_query_string_parameters": lambda_event['multiValueQueryStringParameters'],
+            "path_parameters": lambda_event['pathParameters'],
+            # headers
+            "headers": lambda_event['headers'],
+            # body
+            "body": lambda_event['body']  
+        }
+
+        return payload
+
+    def __init__(self, lambda_id, lambda_event, crud_functions: dict):
+        self.lambda_id = lambda_id
+        self.payload = CrudLambdaManager.__extract_payload(lambda_event)
+        self.crud_functions = crud_functions
+
+
+    def process_call(self):
+        """
+            Extracts the called HTTP method and resource, invokes the proper
+            function and returns the HTTP response.
+        """
+        response = self.crud_functions[self.payload["resource"]][self.payload["http_method"]](self.payload)
+
+        return response
+
 
 def get_dynamodb_table_item(dynamodb_table, key_name, key_value):
     return dynamodb_table.get_item(
@@ -24,22 +64,6 @@ def get_random_id(size: int):
 
     return generated_id
 
-
-def extract_payload(event):
-    payload = {
-        "http_method": event['requestContext']['httpMethod'],
-        "resource": event['resource'],
-        "path": event['path'],
-        "query_string_parameters": event['queryStringParameters'],
-        "multi_value_query_string_parameters": event['multiValueQueryStringParameters'],
-        "path_parameters": event['pathParameters'],
-        "body": event['body'],
-        "is_base64_encoded": event['isBase64Encoded'],
-        "request_time": event['requestContext']['requestTime'],
-        "headers": event['headers']
-    }
-
-    return payload
 
 
 def get_generic_lambda_response(status_code: int, payload: dict):
