@@ -93,6 +93,72 @@ class Image:
         }
 
 
+class CRUDImage(LambdaTools.CRUDInterface):
+    def get_collection(self, payload: dict):
+        """
+            Function reponsible for GET /images
+        """
+        return "None"
+
+
+    def post_new_item(self, payload: dict):
+        """
+            Function reponsible for POST /images
+        """
+        image_payload = {
+            "name": payload['headers']['Image-Name'],
+            "format": Image.get_image_extension_by_content_type(payload['headers']['Content-Type']),
+            "b64_encoded_image": payload['body']
+        }
+
+        image = Image(
+            bucket, table,
+            image_name=image_payload['name'],
+            image_format=image_payload['format'],
+            b64_encoded_image=image_payload['b64_encoded_image']
+        )
+
+        return LambdaTools.CRUDLambdaManager.lambda_http_response(HTTPStatus.CREATED, image.save_image())
+
+
+    def get_item(self, payload: dict):
+        """
+            Function reponsible for GET /images/{image-id}
+        """
+        image = Image(
+            bucket, table,
+            image_id=payload['params']['path_params']['image-id']
+        )
+
+        return LambdaTools.CRUDLambdaManager.lambda_http_response(HTTPStatus.OK, image.get_image())
+
+
+    def put_item(self, payload: dict):
+        """
+            Function reponsible for PUT /images/{image-id}
+        """
+        return "None"
+
+
+    def patch_item(self, payload: dict):
+        """
+            Function reponsible for PATCH /images/{image-id}
+        """
+        return "None"
+
+
+    def delete_item(self, payload: dict):
+        """
+            Function reponsible for DELETE /images/{image-id}
+        """
+        image = Image(
+            bucket, table,
+            image_id=payload['params']['path_params']['image-id']
+        )
+
+        return LambdaTools.CRUDLambdaManager.lambda_http_response(HTTPStatus.NO_CONTENT, image.delete_image())
+
+
 def lambda_handler(event, _):
     """
         Lambda responsible for processing CRUD operations on images.
@@ -102,83 +168,8 @@ def lambda_handler(event, _):
     """
     crud_lambda_manager = LambdaTools.CRUDLambdaManager(
         'images_crud_lambda', event,
-        {
-            "/images": {
-                LambdaTools.HTTPMethod.GET: get_images,
-                LambdaTools.HTTPMethod.POST: post_image
-            },
-            "/images/{image-id}": {
-                LambdaTools.HTTPMethod.GET: get_image,
-                LambdaTools.HTTPMethod.PUT: put_image,
-                LambdaTools.HTTPMethod.PATCH: patch_image,
-                LambdaTools.HTTPMethod.DELETE: delete_image
-            }
-        }  
+        CRUDImage('/images', '/{image-id}')
     )
 
     return crud_lambda_manager.process_call()
 
-
-def get_images(payload: dict):
-    """
-        Function reponsible for GET /images
-    """
-    return "None"
-
-
-def post_image(payload: dict):
-    """
-        Function reponsible for POST /images
-    """
-    image_payload = {
-        "name": payload['headers']['Image-Name'],
-        "format": Image.get_image_extension_by_content_type(payload['headers']['Content-Type']),
-        "b64_encoded_image": payload['body']
-    }
-
-    image = Image(
-        bucket, table,
-        image_name=image_payload['name'],
-        image_format=image_payload['format'],
-        b64_encoded_image=image_payload['b64_encoded_image']
-    )
-
-    return LambdaTools.CRUDLambdaManager.lambda_http_response(HTTPStatus.CREATED, image.save_image())
-
-
-def get_image(payload: dict):
-    """
-        Function reponsible for GET /images/{image-id}
-    """
-    image = Image(
-        bucket, table,
-        image_id=payload['params']['path_params']['image-id']
-    )
-
-    return LambdaTools.CRUDLambdaManager.lambda_http_response(HTTPStatus.OK, image.get_image())
-
-
-def put_image(payload: dict):
-    """
-        Function reponsible for PUT /images/{image-id}
-    """
-    return "None"
-
-
-def patch_image(payload: dict):
-    """
-        Function reponsible for PATCH /images/{image-id}
-    """
-    return "None"
-
-
-def delete_image(payload: dict):
-    """
-        Function reponsible for DELETE /images/{image-id}
-    """
-    image = Image(
-        bucket, table,
-        image_id=payload['params']['path_params']['image-id']
-    )
-
-    return LambdaTools.CRUDLambdaManager.lambda_http_response(HTTPStatus.NO_CONTENT, image.delete_image())
