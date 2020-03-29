@@ -15,7 +15,7 @@ class HTTPMethod(Enum):
     DELETE = "DELETE"
 
 
-class CrudLambdaManager:
+class CRUDLambdaManager:
     @classmethod
     def __extract_payload(cls, lambda_event):
         payload = {
@@ -37,9 +37,23 @@ class CrudLambdaManager:
 
         return payload
 
+
+    @staticmethod
+    def lambda_http_response(status_code: HTTPStatus, body: dict):
+        response = {
+            "statusCode": status_code.value,
+            "headers": {
+                'Content-Type': 'application/json'
+            },
+            "body": json.dumps(body)
+        }
+
+        return response
+
+
     def __init__(self, lambda_id, lambda_event, crud_functions: dict):
         self.lambda_id = lambda_id
-        self.payload = CrudLambdaManager.__extract_payload(lambda_event)
+        self.payload = CRUDLambdaManager.__extract_payload(lambda_event)
         self.crud_functions = crud_functions
 
 
@@ -53,59 +67,54 @@ class CrudLambdaManager:
         return response
 
 
-def get_dynamodb_table_item(dynamodb_table, key_name, key_value):
-    return dynamodb_table.get_item(
-        Key={
-            key_name: key_value
-        }
-    )['Item']
+class AWSResourceHelper:
+    @staticmethod
+    def dynamodb_get_table_item(dynamodb_table, key_name, key_value):
+        return dynamodb_table.get_item(
+            Key={
+                key_name: key_value
+            }
+        )['Item']
 
 
-def get_random_id(size: int):
-    random.seed()
-    charset = string.digits + string.ascii_letters + '_'
+    @staticmethod
+    def s3_create_presigned_url(bucket_name, object_name, expiration=3600):
+        """Generate a presigned URL to share an S3 object
 
-    generated_id = ""
+        :param bucket_name: string
+        :param object_name: string
+        :param expiration: Time in seconds for the presigned URL to remain valid
+        :return: Presigned URL as string. If error, returns None.
+        """
 
-    for _ in range(0, size):
-        generated_id = generated_id + \
-            charset[random.randint(0, len(charset) - 1)]
+        # Generate a presigned URL for the S3 object
+        s3_client = boto3.client('s3')
+        try:
+            response = s3_client.generate_presigned_url('get_object',
+                                                        Params={'Bucket': bucket_name,
+                                                                'Key': object_name},
+                                                        ExpiresIn=expiration)
+        except ClientError as e:
+            logging.error(e)
+            return None
 
-    return generated_id
-
-
-
-def get_generic_lambda_response(status_code: HTTPStatus, payload: dict):
-    response = {
-        "statusCode": status_code.value,
-        "headers": {
-            'Content-Type': 'application/json'
-        },
-        "body": json.dumps(payload)
-    }
-
-    return response
+        # The response contains the presigned URL
+        return response
 
 
-def create_presigned_url(bucket_name, object_name, expiration=3600):
-    """Generate a presigned URL to share an S3 object
+class GenericTools:
+    @staticmethod
+    def get_random_id(size: int):
+        random.seed()
+        charset = string.digits + string.ascii_letters + '_'
 
-    :param bucket_name: string
-    :param object_name: string
-    :param expiration: Time in seconds for the presigned URL to remain valid
-    :return: Presigned URL as string. If error, returns None.
-    """
+        generated_id = ""
 
-    # Generate a presigned URL for the S3 object
-    s3_client = boto3.client('s3')
-    try:
-        response = s3_client.generate_presigned_url('get_object',
-                                                    Params={'Bucket': bucket_name,
-                                                            'Key': object_name},
-                                                    ExpiresIn=expiration)
-    except ClientError as e:
-        logging.error(e)
-        return None
+        for _ in range(0, size):
+            generated_id = generated_id + \
+                charset[random.randint(0, len(charset) - 1)]
 
-    # The response contains the presigned URL
-    return response
+        return generated_id
+
+
+

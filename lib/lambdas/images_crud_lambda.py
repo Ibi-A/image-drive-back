@@ -34,7 +34,7 @@ class Image:
         if image_id is not None:
             self.image_id = image_id
 
-            image_info = LambdaTools.get_dynamodb_table_item(
+            image_info = LambdaTools.AWSResourceHelper.dynamodb_get_table_item(
                 self.dynamodb_table, 'id', self.image_id)
 
             self.image_name = image_info['name']
@@ -43,14 +43,14 @@ class Image:
 
         # if the image does not exist, create an ID and initialize it
         elif (image_name and image_format and b64_encoded_image) is not None:
-            self.image_id = LambdaTools.get_random_id(Image.IMAGE_ID_LENGTH)
+            self.image_id = LambdaTools.GenericTools.get_random_id(Image.IMAGE_ID_LENGTH)
             self.image_name = image_name
             self.image_format = image_format.upper()
             self.image_s3_key = f'{self.image_id}.{self.image_format.lower()}'
             self.b64_encoded_image = b64_encoded_image
 
     def get_image(self):
-        redirect_url = LambdaTools.create_presigned_url(
+        redirect_url = LambdaTools.AWSResourceHelper.s3_create_presigned_url(
             self.s3_bucket.name, self.image_s3_key)
 
         payload = self.output_payload(redirect_url)
@@ -72,7 +72,7 @@ class Image:
             }
         )
 
-        redirect_url = LambdaTools.create_presigned_url(
+        redirect_url = LambdaTools.AWSResourceHelper.s3_create_presigned_url(
             self.s3_bucket.name, self.image_s3_key)
         payload = self.output_payload(redirect_url)
 
@@ -113,7 +113,7 @@ def lambda_handler(event, _):
         Extracts the payload received from the API call and processes it
         accordingly.
     """
-    crud_lambda_manager = LambdaTools.CrudLambdaManager(
+    crud_lambda_manager = LambdaTools.CRUDLambdaManager(
         'images_crud_lambda', event,
         {
             "/images": {
@@ -156,7 +156,7 @@ def post_image(payload: dict):
         b64_encoded_image=image_payload['b64_encoded_image']
     )
 
-    return LambdaTools.get_generic_lambda_response(HTTPStatus.CREATED, image.save_image())
+    return LambdaTools.CRUDLambdaManager.lambda_http_response(HTTPStatus.CREATED, image.save_image())
 
 
 def get_image(payload: dict):
@@ -168,7 +168,7 @@ def get_image(payload: dict):
         image_id=payload['params']['path_params']['image-id']
     )
 
-    return LambdaTools.get_generic_lambda_response(HTTPStatus.OK, image.get_image())
+    return LambdaTools.CRUDLambdaManager.lambda_http_response(HTTPStatus.OK, image.get_image())
 
 
 def put_image(payload: dict):
@@ -194,4 +194,4 @@ def delete_image(payload: dict):
         image_id=payload['params']['path_params']['image-id']
     )
 
-    return LambdaTools.get_generic_lambda_response(HTTPStatus.NO_CONTENT, image.delete_image())
+    return LambdaTools.CRUDLambdaManager.lambda_http_response(HTTPStatus.NO_CONTENT, image.delete_image())
