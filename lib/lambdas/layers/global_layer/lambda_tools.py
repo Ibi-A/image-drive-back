@@ -21,20 +21,12 @@ class HTTPMethod(Enum):
 class AWSResourceHelper:
     @staticmethod
     def dynamodb_get_table_item(table, key_name: str, key_value: str) -> dict:
-        return table.get_item(
-            Key={
-                key_name: key_value
-            }
-        )['Item']
+        return table.get_item(Key={key_name: key_value})['Item']
 
 
     @staticmethod
     def dynamodb_delete_item(table, key_name: str, key_value: str) -> dict:
-        return table.delete_item(
-            Key={
-                key_name: key_value
-            }
-        )
+        return table.delete_item(Key={key_name: key_value})
 
     @staticmethod
     def s3_create_presigned_url(bucket_name: str, object_name: str, expiration: int=3600) -> str:
@@ -159,16 +151,16 @@ class CRUDLambdaManager:
 
 
     @staticmethod
-    def lambda_http_response(status_code: HTTPStatus, body: dict) -> dict:
-        response = {
+    def lambda_http_response(status_code: HTTPStatus, payload: dict) -> dict:
+        http_response = {
             'statusCode': status_code.value,
             'headers': {
                 'Content-Type': 'application/json'
             },
-            'body': json.dumps(body)
+            'body': json.dumps(payload)
         }
 
-        return response
+        return http_response
 
 
     def __init__(self, lambda_id: str, lambda_event, crud_functions: CRUDInterface):
@@ -182,6 +174,6 @@ class CRUDLambdaManager:
             Extracts the called HTTP method and resource, invokes the proper
             function and returns the HTTP response.
         """
-        response = self.crud_functions[self.payload['context']['resource']][self.payload['context']['http_method']](self.payload)
+        http_response = self.crud_functions[self.payload['context']['resource']][self.payload['context']['http_method']](self.payload)
 
-        return response
+        return http_response
