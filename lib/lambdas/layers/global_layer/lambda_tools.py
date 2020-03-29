@@ -9,6 +9,7 @@ from typing import final
 from abc import ABC, abstractmethod
 
 
+@final
 class HTTPMethod(Enum):
     GET = "GET"
     POST = "POST"
