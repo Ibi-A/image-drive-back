@@ -117,7 +117,10 @@ class CRUDImage(LambdaTools.CRUDInterface):
             b64_encoded_image=image_payload['b64_encoded_image']
         )
 
-        return LambdaTools.CRUDLambdaManager.lambda_http_response(HTTPStatus.CREATED, image.save_image())
+        return LambdaTools.CRUDLambdaManager.lambda_http_response(
+            HTTPStatus.CREATED,
+            image.save_image()
+        )
 
 
     def get_item(self, payload: dict) -> dict:
@@ -129,7 +132,10 @@ class CRUDImage(LambdaTools.CRUDInterface):
             image_id=payload['params']['path_params']['image-id']
         )
 
-        return LambdaTools.CRUDLambdaManager.lambda_http_response(HTTPStatus.OK, image.get_image())
+        return LambdaTools.CRUDLambdaManager.lambda_http_response(
+            HTTPStatus.OK,
+            image.get_image()
+        )
 
 
     def put_item(self, payload: dict) -> dict:
@@ -155,7 +161,10 @@ class CRUDImage(LambdaTools.CRUDInterface):
             image_id=payload['params']['path_params']['image-id']
         )
 
-        return LambdaTools.CRUDLambdaManager.lambda_http_response(HTTPStatus.NO_CONTENT, image.delete_image())
+        return LambdaTools.CRUDLambdaManager.lambda_http_response(
+            HTTPStatus.NO_CONTENT,
+            image.delete_image()
+        )
 
 
 def lambda_handler(event, _):
