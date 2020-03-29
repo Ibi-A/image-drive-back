@@ -1,9 +1,8 @@
-import json
 import boto3
 import os
 import layers.global_layer.lambda_tools as LambdaTools
 
-from base64 import b64encode, b64decode
+from base64 import b64decode
 from http import HTTPStatus
 
 
