@@ -3,8 +3,8 @@ import boto3
 import os
 import layers.global_layer.lambda_tools as LambdaTools
 
-from enum import Enum
 from base64 import b64encode, b64decode
+from http import HTTPStatus
 
 
 """
@@ -54,9 +54,8 @@ class Image:
             self.s3_bucket.name, self.image_s3_key)
 
         payload = self.output_payload(redirect_url)
-        response = LambdaTools.get_generic_lambda_response(200, payload)
-
-        return response
+        
+        return payload
 
     def save_image(self):
         decoded_image = b64decode(self.b64_encoded_image)
@@ -76,9 +75,8 @@ class Image:
         redirect_url = LambdaTools.create_presigned_url(
             self.s3_bucket.name, self.image_s3_key)
         payload = self.output_payload(redirect_url)
-        response = LambdaTools.get_generic_lambda_response(201, payload)
 
-        return response
+        return payload
 
     def delete_image(self):
         self.s3_bucket.delete_objects(
@@ -96,10 +94,8 @@ class Image:
                 'id': self.image_id
             }
         )
-
-        response = LambdaTools.get_generic_lambda_response(204, None)
-
-        return response
+     
+        return None
 
     def output_payload(self, s3_presigned_url):
         return {
@@ -121,14 +117,14 @@ def lambda_handler(event, _):
         'images_crud_lambda', event,
         {
             "/images": {
-                "GET": get_images,
-                "POST": post_image
+                LambdaTools.HTTPMethod.GET: get_images,
+                LambdaTools.HTTPMethod.POST: post_image
             },
             "/images/{image-id}": {
-                "GET": get_image,
-                "PUT": put_image,
-                "PATCH": patch_image,
-                "DELETE": delete_image
+                LambdaTools.HTTPMethod.GET: get_image,
+                LambdaTools.HTTPMethod.PUT: put_image,
+                LambdaTools.HTTPMethod.PATCH: patch_image,
+                LambdaTools.HTTPMethod.DELETE: delete_image
             }
         }  
     )
@@ -160,7 +156,7 @@ def post_image(payload: dict):
         b64_encoded_image=image_payload['b64_encoded_image']
     )
 
-    return image.save_image()
+    return LambdaTools.get_generic_lambda_response(HTTPStatus.CREATED, image.save_image())
 
 
 def get_image(payload: dict):
@@ -169,10 +165,10 @@ def get_image(payload: dict):
     """
     image = Image(
         bucket, table,
-        image_id=payload['path_parameters']['image-id']
+        image_id=payload['params']['path_params']['image-id']
     )
 
-    return image.get_image()
+    return LambdaTools.get_generic_lambda_response(HTTPStatus.OK, image.get_image())
 
 
 def put_image(payload: dict):
@@ -195,7 +191,7 @@ def delete_image(payload: dict):
     """
     image = Image(
         bucket, table,
-        image_id=payload['path_parameters']['image-id']
+        image_id=payload['params']['path_params']['image-id']
     )
 
-    return image.delete_image()
+    return LambdaTools.get_generic_lambda_response(HTTPStatus.NO_CONTENT, image.delete_image())

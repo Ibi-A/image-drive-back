@@ -3,26 +3,35 @@ import boto3
 import string
 import random
 
+from enum import Enum
 from http import HTTPStatus
+
+
+class HTTPMethod(Enum):
+    GET = "GET"
+    POST = "POST"
+    PUT = "PUT"
+    PATCH = "PATCH"
+    DELETE = "DELETE"
 
 
 class CrudLambdaManager:
     @classmethod
     def __extract_payload(cls, lambda_event):
         payload = {
-            # context
-            "http_method": lambda_event['requestContext']['httpMethod'],
-            "resource": lambda_event['resource'],
-            "path": lambda_event['path'],
-            "is_base64_encoded": lambda_event['isBase64Encoded'],
-            "request_time": lambda_event['requestContext']['requestTime'],
-            # params
-            "query_string_parameters": lambda_event['queryStringParameters'],
-            "multi_value_query_string_parameters": lambda_event['multiValueQueryStringParameters'],
-            "path_parameters": lambda_event['pathParameters'],
-            # headers
+            "context": {
+                "http_method": HTTPMethod(lambda_event['requestContext']['httpMethod']),
+                "resource": lambda_event['resource'],
+                "path": lambda_event['path'],
+                "is_base64_encoded": lambda_event['isBase64Encoded'],
+                "request_time": lambda_event['requestContext']['requestTime'],
+            },
             "headers": lambda_event['headers'],
-            # body
+            "params": {
+                "query_string_params": lambda_event['queryStringParameters'],
+                "multi_value_query_string_params": lambda_event['multiValueQueryStringParameters'],
+                "path_params": lambda_event['pathParameters'],
+            },
             "body": lambda_event['body']  
         }
 
@@ -39,7 +48,7 @@ class CrudLambdaManager:
             Extracts the called HTTP method and resource, invokes the proper
             function and returns the HTTP response.
         """
-        response = self.crud_functions[self.payload["resource"]][self.payload["http_method"]](self.payload)
+        response = self.crud_functions[self.payload['context']["resource"]][self.payload['context']["http_method"]](self.payload)
 
         return response
 
@@ -66,9 +75,9 @@ def get_random_id(size: int):
 
 
 
-def get_generic_lambda_response(status_code: int, payload: dict):
+def get_generic_lambda_response(status_code: HTTPStatus, payload: dict):
     response = {
-        "statusCode": status_code,
+        "statusCode": status_code.value,
         "headers": {
             'Content-Type': 'application/json'
         },
