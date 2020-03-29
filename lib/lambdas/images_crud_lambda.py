@@ -20,13 +20,13 @@ class Image:
     IMAGE_ID_LENGTH = 16
 
     @staticmethod
-    def get_image_extension_by_content_type(content_type: str):
+    def get_image_extension_by_content_type(content_type: str) -> str:
         if content_type == 'image/jpeg':
             return 'JPG'
         elif content_type == 'image/png':
             return 'PNG'
 
-    def __init__(self, s3_bucket, dynamodb_table, image_id=None, image_name=None, image_format=None, b64_encoded_image=None):
+    def __init__(self, s3_bucket, dynamodb_table, image_id: str=None, image_name: str=None, image_format: str=None, b64_encoded_image=None):
         self.s3_bucket = s3_bucket
         self.dynamodb_table = dynamodb_table
 
@@ -49,15 +49,15 @@ class Image:
             self.image_s3_key = f'{self.image_id}.{self.image_format.lower()}'
             self.b64_encoded_image = b64_encoded_image
 
-    def get_image(self):
+    def get_image(self) -> dict:
         redirect_url = LambdaTools.AWSResourceHelper.s3_create_presigned_url(
             self.s3_bucket.name, self.image_s3_key)
 
-        payload = self.output_payload(redirect_url)
+        payload = self.as_dict(redirect_url)
         
         return payload
 
-    def save_image(self):
+    def save_image(self) -> dict:
         decoded_image = b64decode(self.b64_encoded_image)
 
         self.s3_bucket.put_object(
@@ -74,17 +74,17 @@ class Image:
 
         redirect_url = LambdaTools.AWSResourceHelper.s3_create_presigned_url(
             self.s3_bucket.name, self.image_s3_key)
-        payload = self.output_payload(redirect_url)
+        payload = self.as_dict(redirect_url)
 
         return payload
 
-    def delete_image(self):
+    def delete_image(self) -> None:
         LambdaTools.AWSResourceHelper.s3_delete_object(self.s3_bucket, self.image_s3_key)
         LambdaTools.AWSResourceHelper.dynamodb_delete_item(self.dynamodb_table, 'id', self.image_id)
 
         return None
 
-    def output_payload(self, s3_presigned_url):
+    def as_dict(self, s3_presigned_url: str) -> dict:
         return {
             "id": self.image_id,
             "name": self.image_name,
@@ -94,14 +94,14 @@ class Image:
 
 
 class CRUDImage(LambdaTools.CRUDInterface):
-    def get_collection(self, payload: dict):
+    def get_collection(self, payload: dict) -> dict:
         """
             Function reponsible for GET /images
         """
         return "None"
 
 
-    def post_new_item(self, payload: dict):
+    def post_new_item(self, payload: dict) -> dict:
         """
             Function reponsible for POST /images
         """
@@ -121,7 +121,7 @@ class CRUDImage(LambdaTools.CRUDInterface):
         return LambdaTools.CRUDLambdaManager.lambda_http_response(HTTPStatus.CREATED, image.save_image())
 
 
-    def get_item(self, payload: dict):
+    def get_item(self, payload: dict) -> dict:
         """
             Function reponsible for GET /images/{image-id}
         """
@@ -133,21 +133,21 @@ class CRUDImage(LambdaTools.CRUDInterface):
         return LambdaTools.CRUDLambdaManager.lambda_http_response(HTTPStatus.OK, image.get_image())
 
 
-    def put_item(self, payload: dict):
+    def put_item(self, payload: dict) -> dict:
         """
             Function reponsible for PUT /images/{image-id}
         """
         return "None"
 
 
-    def patch_item(self, payload: dict):
+    def patch_item(self, payload: dict) -> dict:
         """
             Function reponsible for PATCH /images/{image-id}
         """
         return "None"
 
 
-    def delete_item(self, payload: dict):
+    def delete_item(self, payload: dict) -> dict:
         """
             Function reponsible for DELETE /images/{image-id}
         """

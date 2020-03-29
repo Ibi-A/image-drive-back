@@ -19,8 +19,8 @@ class HTTPMethod(Enum):
 
 class AWSResourceHelper:
     @staticmethod
-    def dynamodb_get_table_item(dynamodb_table, key_name, key_value):
-        return dynamodb_table.get_item(
+    def dynamodb_get_table_item(table, key_name: str, key_value: str) -> dict:
+        return table.get_item(
             Key={
                 key_name: key_value
             }
@@ -28,7 +28,15 @@ class AWSResourceHelper:
 
 
     @staticmethod
-    def s3_create_presigned_url(bucket_name, object_name, expiration=3600):
+    def dynamodb_delete_item(table, key_name: str, key_value: str) -> dict:
+        return table.delete_item(
+            Key={
+                key_name: key_value
+            }
+        )
+
+    @staticmethod
+    def s3_create_presigned_url(bucket_name: str, object_name: str, expiration: int=3600) -> str:
         """Generate a presigned URL to share an S3 object
 
         :param bucket_name: string
@@ -53,7 +61,7 @@ class AWSResourceHelper:
 
 
     @staticmethod
-    def s3_delete_object(bucket, object_name):
+    def s3_delete_object(bucket, object_name: str) -> dict:
         return bucket.delete_objects(
             Delete={
                 'Objects': [
@@ -64,18 +72,10 @@ class AWSResourceHelper:
             }
         )
 
-    @staticmethod
-    def dynamodb_delete_item(table, key_name, key_value):
-        return table.delete_item(
-            Key={
-                key_name: key_value
-            }
-        )
-
 
 class GenericTools:
     @staticmethod
-    def get_random_id(size: int):
+    def get_random_id(size: int) -> str:
         random.seed()
         charset = string.digits + string.ascii_letters + '_'
 
@@ -95,31 +95,31 @@ class CRUDInterface(ABC):
         self.item_path = f'{self.collection_path}{item_path}'
 
     @abstractmethod
-    def get_collection(self, payload: dict):
+    def get_collection(self, payload: dict) -> dict:
         pass
 
     @abstractmethod
-    def post_new_item(self, payload: dict):
+    def post_new_item(self, payload: dict) -> dict:
         pass
 
     @abstractmethod
-    def get_item(self, payload: dict):
+    def get_item(self, payload: dict) -> dict:
         pass
     
     @abstractmethod
-    def put_item(self, payload: dict):
+    def put_item(self, payload: dict) -> dict:
         pass
 
     @abstractmethod
-    def patch_item(self, payload: dict):
+    def patch_item(self, payload: dict) -> dict:
         pass
 
     @abstractmethod
-    def delete_item(self, payload: dict):
+    def delete_item(self, payload: dict) -> dict:
         pass
 
     @final
-    def as_dict(self):
+    def as_dict(self) -> dict:
         return {
             self.collection_path: {
                 HTTPMethod.GET: self.get_collection,
@@ -136,7 +136,7 @@ class CRUDInterface(ABC):
 @final
 class CRUDLambdaManager:
     @classmethod
-    def __extract_payload(cls, lambda_event):
+    def __extract_payload(cls, lambda_event) -> dict:
         payload = {
             "context": {
                 "http_method": HTTPMethod(lambda_event['requestContext']['httpMethod']),
@@ -158,7 +158,7 @@ class CRUDLambdaManager:
 
 
     @staticmethod
-    def lambda_http_response(status_code: HTTPStatus, body: dict):
+    def lambda_http_response(status_code: HTTPStatus, body: dict) -> dict:
         response = {
             "statusCode": status_code.value,
             "headers": {
@@ -170,13 +170,13 @@ class CRUDLambdaManager:
         return response
 
 
-    def __init__(self, lambda_id, lambda_event, crud_functions: CRUDInterface):
+    def __init__(self, lambda_id: str, lambda_event, crud_functions: CRUDInterface):
         self.lambda_id = lambda_id
         self.payload = CRUDLambdaManager.__extract_payload(lambda_event)
         self.crud_functions = crud_functions.as_dict()
 
 
-    def process_call(self):
+    def process_call(self) -> dict:
         """
             Extracts the called HTTP method and resource, invokes the proper
             function and returns the HTTP response.
