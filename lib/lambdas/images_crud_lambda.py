@@ -1,12 +1,16 @@
 import json
 import boto3
 import os
-import layers.global_layer.lambda_tools as LambdaTools 
-
+import layers.global_layer.lambda_tools as LambdaTools
 
 from enum import Enum
 from base64 import b64encode, b64decode
 
+
+s3 = boto3.resource('s3')
+bucket = s3.Bucket(os.environ['images_s3_bucket_name'])
+dynamodb = boto3.resource('dynamodb')
+table = dynamodb.Table(os.environ['images_dynamodb_information_table'])
 
 
 class Image:
@@ -19,8 +23,7 @@ class Image:
         elif content_type == 'image/png':
             return 'PNG'
 
-
-    def __init__(self, s3_bucket, dynamodb_table, image_id=None, image_name=None, image_format=None, encoded_b64_image=None):
+    def __init__(self, s3_bucket, dynamodb_table, image_id=None, image_name=None, image_format=None, b64_encoded_image=None):
         self.s3_bucket = s3_bucket
         self.dynamodb_table = dynamodb_table
 
@@ -33,28 +36,27 @@ class Image:
             self.image_format = image_info['format']
             self.image_s3_key = image_info['s3_key']
 
-        elif (image_name and image_format and encoded_b64_image) is not None:
+        elif (image_name and image_format and b64_encoded_image) is not None:
             self.image_id = LambdaTools.get_random_id(Image.IMAGE_ID_LENGTH)
             self.image_name = image_name
             self.image_format = image_format.upper()
             self.image_s3_key = f'{self.image_id}.{self.image_format.lower()}'
-            self.encoded_b64_image = encoded_b64_image
+            self.b64_encoded_image = b64_encoded_image
 
-    def get_image_http_payload(self):
+    def get_image(self):
         redirect_url = LambdaTools.create_presigned_url(
             self.s3_bucket.name, self.image_s3_key)
 
-        payload = self.get_image_payload(redirect_url)
-
+        payload = self.output_payload(redirect_url)
         response = LambdaTools.get_generic_lambda_response(200, payload)
 
         return response
 
     def save_image(self):
-        decoded_b64_image = b64decode(self.encoded_b64_image)
+        decoded_image = b64decode(self.b64_encoded_image)
 
         self.s3_bucket.put_object(
-            Key=f"{self.image_s3_key}", Body=decoded_b64_image, ACL='public-read')
+            Key=f"{self.image_s3_key}", Body=decoded_image, ACL='public-read')
 
         self.dynamodb_table.put_item(
             Item={
@@ -67,25 +69,20 @@ class Image:
 
         redirect_url = LambdaTools.create_presigned_url(
             self.s3_bucket.name, self.image_s3_key)
-
-        payload = self.get_image_payload(redirect_url)
-
-        response = LambdaTools.get_generic_lambda_response(200, payload)
+        payload = self.output_payload(redirect_url)
+        response = LambdaTools.get_generic_lambda_response(201, payload)
 
         return response
 
     def delete_image(self):
-
-        print(self.image_s3_key)
-
-        print(self.s3_bucket.delete_objects(
+        self.s3_bucket.delete_objects(
             Delete={
                 'Objects': [
                     {
                         'Key': f"{self.image_s3_key}"
                     }
                 ]
-            })
+            }
         )
         
         self.dynamodb_table.delete_item(
@@ -94,13 +91,11 @@ class Image:
             }
         )
 
-        payload = None
-
-        response = LambdaTools.get_generic_lambda_response(204, payload)
+        response = LambdaTools.get_generic_lambda_response(204, None)
 
         return response
 
-    def get_image_payload(self, s3_presigned_url):
+    def output_payload(self, s3_presigned_url):
         return {
             "id": self.image_id,
             "name": self.image_name,
@@ -140,34 +135,29 @@ def get_images(payload: dict):
 
 
 def post_image(payload: dict):
-    image = {
+    image_payload = {
         "name": payload['headers']['Image-Name'],
         "format": Image.get_image_extension_by_content_type(payload['headers']['Content-Type']),
         "b64_encoded_image": payload['body']
     }
 
-    s3 = boto3.resource('s3')
-    bucket = s3.Bucket(os.environ['images_s3_bucket_name'])
-    dynamodb = boto3.resource('dynamodb')
-    table = dynamodb.Table(os.environ['images_dynamodb_information_table'])
+    image = Image(
+        bucket, table,
+        image_name=image_payload['name'],
+        image_format=image_payload['format'],
+        b64_encoded_image=image_payload['b64_encoded_image']
+    )
 
-    image_to_create = Image(
-        bucket, table, image_name=image['name'], image_format=image['format'], encoded_b64_image=image['b64_encoded_image'])
-
-    return image_to_create.save_image()
+    return image.save_image()
 
 
 def get_image(payload: dict):
-    # fetch the image information from the DynamoDB table
-    s3 = boto3.resource('s3')
-    bucket = s3.Bucket(os.environ['images_s3_bucket_name'])
-    dynamodb = boto3.resource('dynamodb')
-    table = dynamodb.Table(os.environ['images_dynamodb_information_table'])
-
     image = Image(
-        bucket, table, image_id=payload['path_parameters']['image-id'])
+        bucket, table,
+        image_id=payload['path_parameters']['image-id']
+    )
 
-    return image.get_image_http_payload()
+    return image.get_image()
 
 
 def put_image(payload: dict):
@@ -179,12 +169,9 @@ def patch_image(payload: dict):
 
 
 def delete_image(payload: dict):
-    s3 = boto3.resource('s3')
-    bucket = s3.Bucket(os.environ['images_s3_bucket_name'])
-    dynamodb = boto3.resource('dynamodb')
-    table = dynamodb.Table(os.environ['images_dynamodb_information_table'])
-
     image = Image(
-        bucket, table, image_id=payload['path_parameters']['image-id'])
+        bucket, table,
+        image_id=payload['path_parameters']['image-id']
+    )
 
     return image.delete_image()
