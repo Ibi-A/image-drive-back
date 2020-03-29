@@ -105,6 +105,7 @@ export class ImageDriveBackStack extends cdk.Stack {
       informationTable.tableName
     );
 
+    // grant read and write access to the CRUD Lambda on the S3 bucket and the DynamoDB table
     bucket.grantReadWrite(crudLambda)
     informationTable.grantReadWriteData(crudLambda)
 

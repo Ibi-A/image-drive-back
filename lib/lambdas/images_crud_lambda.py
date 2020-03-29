@@ -7,6 +7,9 @@ from enum import Enum
 from base64 import b64encode, b64decode
 
 
+"""
+    Required AWS resources for the CRUD Lambda
+"""
 s3 = boto3.resource('s3')
 bucket = s3.Bucket(os.environ['images_s3_bucket_name'])
 dynamodb = boto3.resource('dynamodb')
@@ -27,6 +30,7 @@ class Image:
         self.s3_bucket = s3_bucket
         self.dynamodb_table = dynamodb_table
 
+        # if the image already exists in the drive, load it
         if image_id is not None:
             self.image_id = image_id
 
@@ -36,6 +40,7 @@ class Image:
             self.image_format = image_info['format']
             self.image_s3_key = image_info['s3_key']
 
+        # if the image does not exist, create an ID and initialize it
         elif (image_name and image_format and b64_encoded_image) is not None:
             self.image_id = LambdaTools.get_random_id(Image.IMAGE_ID_LENGTH)
             self.image_name = image_name
@@ -105,6 +110,12 @@ class Image:
 
 
 def lambda_handler(event, _):
+    """
+        Lambda responsible for processing CRUD operations on images.
+
+        Extracts the payload received from the API call and processes it
+        accordingly.
+    """
     payload = LambdaTools.extract_payload(event)
     response = process_call(payload)
 
@@ -112,6 +123,10 @@ def lambda_handler(event, _):
 
 
 def process_call(payload: dict):
+    """
+        Extracts the called HTTP method and resource, invokes the proper
+        function and returns the HTTP response.
+    """
     calls = {
         "/images": {
             "GET": get_images,
@@ -125,16 +140,22 @@ def process_call(payload: dict):
         }
     }
 
-    result = calls[payload["resource"]][payload["http_method"]](payload)
+    response = calls[payload["resource"]][payload["http_method"]](payload)
 
-    return result
+    return response
 
 
 def get_images(payload: dict):
+    """
+        Function reponsible for GET /images
+    """
     return "None"
 
 
 def post_image(payload: dict):
+    """
+        Function reponsible for POST /images
+    """
     image_payload = {
         "name": payload['headers']['Image-Name'],
         "format": Image.get_image_extension_by_content_type(payload['headers']['Content-Type']),
@@ -152,6 +173,9 @@ def post_image(payload: dict):
 
 
 def get_image(payload: dict):
+    """
+        Function reponsible for GET /images/{image-id}
+    """
     image = Image(
         bucket, table,
         image_id=payload['path_parameters']['image-id']
@@ -161,14 +185,23 @@ def get_image(payload: dict):
 
 
 def put_image(payload: dict):
+    """
+        Function reponsible for PUT /images/{image-id}
+    """
     return "None"
 
 
 def patch_image(payload: dict):
+    """
+        Function reponsible for PATCH /images/{image-id}
+    """
     return "None"
 
 
 def delete_image(payload: dict):
+    """
+        Function reponsible for DELETE /images/{image-id}
+    """
     image = Image(
         bucket, table,
         image_id=payload['path_parameters']['image-id']
