@@ -5,6 +5,8 @@ import random
 
 from enum import Enum
 from http import HTTPStatus
+from typing import final
+from abc import ABC, abstractmethod
 
 
 class HTTPMethod(Enum):
@@ -86,31 +88,37 @@ class GenericTools:
         return generated_id
 
 
-class CRUDInterface():
+class CRUDInterface(ABC):
+    @final
     def __init__(self, collection_path: str, item_path: str):
         self.collection_path = collection_path
         self.item_path = f'{self.collection_path}{item_path}'
 
-
+    @abstractmethod
     def get_collection(self, payload: dict):
         pass
 
+    @abstractmethod
     def post_new_item(self, payload: dict):
         pass
 
+    @abstractmethod
     def get_item(self, payload: dict):
         pass
-
+    
+    @abstractmethod
     def put_item(self, payload: dict):
         pass
 
+    @abstractmethod
     def patch_item(self, payload: dict):
         pass
 
+    @abstractmethod
     def delete_item(self, payload: dict):
         pass
 
-    
+    @final
     def as_dict(self):
         return {
             self.collection_path: {
@@ -125,7 +133,7 @@ class CRUDInterface():
             }
         }
 
-
+@final
 class CRUDLambdaManager:
     @classmethod
     def __extract_payload(cls, lambda_event):
